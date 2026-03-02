@@ -57,7 +57,7 @@ Oshimiri is built with a humanity first vision. AI should coexist with humans â€
 
 Solo founder. No CS degree. Built during Ramadan. Powered by vision and Oshi itself.
 
-Follow the journey on X: [@YourHandle](https://x.com)
+Follow the journey on X: [@Nuur194)
 
 ## Status
 
