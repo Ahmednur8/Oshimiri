@@ -1,4 +1,3 @@
-
 # Oshimiri 🌊
 
 > *Oshimiri — from Igbo tradition, meaning "The River That Never Runs Dry." A source of strength that never fails.*
@@ -41,11 +40,14 @@ ollama pull qwen2.5-coder:7b
 # Install dependencies
 pip install fastapi uvicorn ollama
 
-# Download and run the local backend
+# Download the local backend from here:
+# https://gist.github.com/Ahmednur8/d33cc45089b4e0b6187347ab2de349b1
+
+# Run it
 python3 oshimiri_local.py
 ```
 
-Then open [oshimiri.netlify.app](https://oshimiri.netlify.app) and click 🖥️ Local.
+Then open oshimiri.netlify.app and click 🖥️ Local.
 
 ## Philosophy
 
@@ -57,12 +59,10 @@ Oshimiri is built with a humanity first vision. AI should coexist with humans �
 
 Solo founder. No CS degree. Built during Ramadan. Powered by vision and Oshi itself.
 
-Follow the journey on X: [@Nuur194)
+Follow the journey on X: [@Nuur194](https://x.com/Nuur194)
 
 ## Status
 
 🟢 Cloud — Live  
 🟢 Local — Available  
 🔄 Fine-tuning — Coming soon
-
-
