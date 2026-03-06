@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oshimiri — AI Coding Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #7c3aed;
+    --text: #e8e8f0;
+    --text-muted: #6b6b80;
+    --error: #ff4466;
+    --code-bg: #0d0d15;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(0,255,136,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(124,58,237,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+
+  .logo { display: flex; align-items: center; gap: 0.75rem; }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 16px; color: #000;
+  }
+
+  .logo-text { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--accent); }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; color: var(--accent);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .notice {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .notice span { color: var(--accent); }
+
+  .mode-tabs {
+    display: flex; gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    padding: 0.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .tab {
+    flex: 1; padding: 0.75rem; border: none;
+    border-radius: 8px; background: transparent;
+    color: var(--text-muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600; font-size: 0.9rem;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .tab.active .tab-icon { color: var(--accent); }
+  .tab-icon { font-size: 1rem; }
+
+  .input-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .input-area:focus-within { border-color: var(--accent2); }
+
+  .input-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .input-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  .lang-select {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; padding: 0.3rem 0.6rem;
+    outline: none; cursor: pointer;
+  }
+
+  textarea {
+    width: 100%; background: transparent; border: none;
+    padding: 1rem; color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem; line-height: 1.6;
+    resize: vertical; min-height: 140px; outline: none;
+  }
+
+  textarea::placeholder { color: var(--text-muted); }
+
+  .submit-row {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem;
+  }
+
+  .hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--text-muted);
+  }
+
+  .btn-run {
+    background: linear-gradient(135deg, var(--accent2), #9f67ff);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 0.8rem 2rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.9rem;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .btn-run:hover { opacity: 0.9; }
+  .btn-run:active { transform: scale(0.98); }
+  .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .output-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    margin-top: 1.5rem;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .output-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .output-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .btn-copy {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; padding: 0.3rem 0.8rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  .output-content {
+    padding: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem; line-height: 1.7;
+    color: var(--text); white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 500px; overflow-y: auto;
+  }
+
+  .output-content::-webkit-scrollbar { width: 4px; }
+  .output-content::-webkit-scrollbar-track { background: transparent; }
+  .output-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .loading {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1.5rem; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    padding: 1rem; color: var(--error);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+    border-left: 3px solid var(--error);
+    margin: 0.5rem;
+    background: rgba(255,68,102,0.05);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .token-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; color: var(--text-muted);
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+  }
+
+  .mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem;
+  }
+
+  .switch-btn {
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .switch-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .switch-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: auto;
+    padding-right: 0.5rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">OM</div>
+      <div class="logo-text">Oshi<span>miri</span></div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span>Oshi · Local</span>
+    </div>
+  </header>
+
+  <div class="notice">
+    ⚡ Powered by <span>Oshi</span> — your local AI coding agent. Conversations help train future versions of Oshi. We never sell your data.
+  </div>
+
+  <div class="mode-switch">
+    <button class="switch-btn active" onclick="setBackend('cloud')" id="btn-cloud">☁ Cloud</button>
+    <button class="switch-btn" onclick="setBackend('local')" id="btn-local">🖥 Local</button>
+    <span class="switch-status" id="backendStatus">Connected to Oshimiri Cloud</span>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="tab active" onclick="setMode('generate')" id="tab-generate">
+      <span class="tab-icon">⚡</span> Generate Code
+    </button>
+    <button class="tab" onclick="setMode('debug')" id="tab-debug">
+      <span class="tab-icon">🔍</span> Debug Code
+    </button>
+  </div>
+
+  <div class="input-area">
+    <div class="input-header">
+      <span class="input-label" id="inputLabel">Describe what you want to build</span>
+      <select class="lang-select" id="langSelect">
+        <option>Python</option>
+        <option>JavaScript</option>
+        <option>TypeScript</option>
+        <option>HTML/CSS</option>
+        <option>Rust</option>
+        <option>Go</option>
+        <option>Java</option>
+        <option>C++</option>
+        <option>SQL</option>
+        <option>Bash</option>
+        <option>Any</option>
+      </select>
+    </div>
+    <textarea id="userInput" placeholder="e.g. Build a REST API endpoint that handles user authentication with JWT tokens"></textarea>
+  </div>
+
+  <div class="submit-row">
+    <span class="hint" id="hintText">Ctrl + Enter to run</span>
+    <button class="btn-run" id="runBtn" onclick="runRequest()">
+      <span>▶</span> <span id="btnText">Generate</span>
+    </button>
+  </div>
+
+  <div id="outputArea"></div>
+</div>
+
+<script>
+  let currentMode = 'generate';
+  let isLoading = false;
+  let backendUrl = 'https://nur18-oshimiri.hf.space/oshimiri/';
+
+  function setBackend(type) {
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + type).classList.add('active');
+    const status = document.getElementById('backendStatus');
+    if (type === 'cloud') {
+      backendUrl = 'https://nur18-oshimiri.hf.space/oshimiri/';
+      status.textContent = 'Connected to Oshimiri Cloud';
+      status.style.color = 'var(--accent)';
+    } else {
+      backendUrl = 'http://localhost:8000/oshimiri/';
+      status.textContent = 'Connected to Oshi Local';
+      status.style.color = 'var(--accent2)';
+    }
+  }
+
+  document.getElementById('userInput').addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runRequest();
+  });
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + mode).classList.add('active');
+
+    const input = document.getElementById('userInput');
+    const label = document.getElementById('inputLabel');
+    const btn = document.getElementById('btnText');
+
+    if (mode === 'generate') {
+      label.textContent = 'Describe what you want to build';
+      input.placeholder = 'e.g. Build a REST API endpoint that handles user authentication with JWT tokens';
+      btn.textContent = 'Generate';
+    } else {
+      label.textContent = 'Paste your broken code';
+      input.placeholder = 'Paste the code you want debugged here...';
+      btn.textContent = 'Debug';
+    }
+
+    document.getElementById('outputArea').innerHTML = '';
+  }
+
+  async function runRequest() {
+    if (isLoading) return;
+
+    const input = document.getElementById('userInput').value.trim();
+    if (!input) return;
+
+    const lang = document.getElementById('langSelect').value;
+
+    isLoading = true;
+    document.getElementById('runBtn').disabled = true;
+
+    document.getElementById('outputArea').innerHTML = `
+      <div class="output-area">
+        <div class="output-header">
+          <div class="output-label"><div class="spinner"></div> Oshi is thinking...</div>
+        </div>
+        <div class="loading"><div class="spinner"></div> Processing your request...</div>
+      </div>`;
+
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: input,
+          mode: currentMode,
+          language: lang
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      const result = data.response;
+      const usage = data.usage;
+
+      document.getElementById('outputArea').innerHTML = `
+        <div class="output-area">
+          <div class="output-header">
+            <div class="output-label">✓ ${currentMode === 'generate' ? 'Generated' : 'Debugged'}</div>
+            <button class="btn-copy" onclick="copyOutput()">Copy</button>
+          </div>
+          <div class="output-content" id="outputContent">${escapeHtml(result)}</div>
+          ${usage ? `<div class="token-info"><span>Tokens: ${usage.prompt_tokens} in / ${usage.completion_tokens} out</span><span>llama-3.3-70b · Oshi</span></div>` : ''}
+        </div>`;
+
+    } catch (err) {
+      document.getElementById('outputArea').innerHTML = `
+        <div class="output-area">
+          <div class="output-header">
+            <div class="output-label" style="color:var(--error)">✗ Error</div>
+          </div>
+          <div class="error-msg">${escapeHtml(err.message)}<br><br>Make sure the Oshi backend is running: <strong>python3 oshimiri_backend.py</strong></div>
+        </div>`;
+    }
+
+    isLoading = false;
+    document.getElementById('runBtn').disabled = false;
+  }
+
+  function copyOutput() {
+    const el = document.getElementById('outputContent');
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>
